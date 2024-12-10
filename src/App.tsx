@@ -1,38 +1,55 @@
-// Create a simple React application that displays a list of countries and their capitals
-// The application should have the following features:
+import { useState, useEffect } from "react";
+import Comp from "./Comp";
 
-// The list of countries and capitals should be fetched from an API
-// Each country should be displayed in a separate component
-// The user should be able to filter the list by capital
+// Base API URL
+const BASE_URL = "https://restcountries.com/v3.1/all";
 
-/**
-  To fetch all countries use the '/all' endpoint
- */
-
-const BASE_URL = "https://restcountries.com/v3.1";
-/**
-  To filter by capital city, use the '/capital/{capital}' endpoint
- */
-
-const FILTERABLE_CAPITALS = [
-  "Tallinn",
-  "Helsinki",
-  "Stockholm",
-  "Oslo",
-  "Copenhagen",
-  "Reykjavik",
-] as const;
-type Capital = (typeof FILTERABLE_CAPITALS)[number];
-
-interface Country {
-  name: {
-    common: string;
-  };
+// Define Country type (used across App.tsx and Component.tsx)
+export interface Country {
+  name: string;
   capital: string;
 }
 
 export default function App() {
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [filter, setFilter] = useState("");
+
+  useEffect(() => {
+    fetch(`${BASE_URL}`)
+      .then((response) => response.json())
+      .then((data) => {
+        // Log the data to inspect the structure
+        console.log("Fetched data:", data);
+
+        const countryData: Country[] = data.map((country: any) => ({
+          name: country.name.common,
+          capital: country.capital && country.capital.length > 0 ? country.capital[0] : "No capital", // Safe handling for missing capitals
+        }));
+        setCountries(countryData);
+      })
+      .catch((error) => console.error("Error fetching countries:", error));
+  }, []);
+
+  // Filter handler
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilter(e.target.value);
+  };
+
+  // Filtered countries
+  const filteredCountries = countries.filter((country) =>
+    country.capital.toLowerCase().includes(filter.toLowerCase())
+  );
+
   return (
-    <div className="App"><h1>React Interview</h1></div>
+    <div>
+      <h1>Countries and Capitals</h1>
+      <input
+        type="text"
+        placeholder="Filter by capital"
+        value={filter}
+        onChange={handleFilterChange}
+      />
+      <Comp countries={filteredCountries} />
+    </div>
   );
 }
